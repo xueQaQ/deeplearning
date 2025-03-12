@@ -1,5 +1,3 @@
-from logging import root
-from turtle import st
 from torchvision.datasets import FashionMNIST
 from torchvision import transforms
 
@@ -10,6 +8,7 @@ import matplotlib.pyplot as plt
 
 
 
+#数据集下载
 train_data = FashionMNIST(root="./data", 
                           train=True,
                           transform=transforms.Compose([transforms.Resize(size=224),transforms.ToTensor()]),
