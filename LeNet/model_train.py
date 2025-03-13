@@ -12,6 +12,8 @@ from model import LeNet
 
 import torch.nn as nn
 import time
+import pandas as pd
+
 
 
 def train_val_data_process():
@@ -28,14 +30,14 @@ def train_val_data_process():
     
     # 创建数据加载器
     train_dataloader = Data.DataLoader(dataset=train_data,
-                                       batch_size=128,
+                                       batch_size=32,
                                        shuffle=True,       #shuffle 是否打乱顺序， True，打乱，False，不打乱
-                                       num_workers=8)      #使用8个子进程加载数据
+                                       num_workers=2)      #使用8个子进程加载数据
 
     val_dataloader = Data.DataLoader(dataset=val_data,
-                                       batch_size=128,
+                                       batch_size=32,
                                        shuffle=True,
-                                       num_workers=8)
+                                       num_workers=2)
     return train_dataloader,val_dataloader
 
 
@@ -105,7 +107,7 @@ def train_model_process(model,train_dataloader,val_dataloader,num_epochs):
             b_x = b_x.to(device)
             b_y = b_y.to(device)
 
-            model.val()
+            model.eval()
 
             ouput = model(b_x)
 
@@ -115,15 +117,84 @@ def train_model_process(model,train_dataloader,val_dataloader,num_epochs):
             loss = criterion(ouput,b_y)
 
             #梯度置为0
-            optimizer.zero_grad()
             val_loss+= loss.item() * b_x.size(0)
             val_corrects += torch.sum(pre_lab == b_y.data)
             val_num += b_x.size(0)
 
+        
 
         #计算epoch指标
-        epoch_loss = train_loss/train_num
-        epoch_acc = train_corrects.double()/train_num
+        train_loss_all.append(train_loss/train_num)   
+        val_loss_all.append(val_loss/val_num) 
+        
+        # epoch_loss = train_loss/train_num
+        
+        train_epoch_acc = train_corrects.double()/train_num
+        val_epoch_acc = val_corrects.double()/val_num
+
+        print("{} train loss:{:.4f} train acc : {:.4f}".format(epoch,train_loss_all[-1],train_acc_all[-1]))
+        print("{} val loss:{:.4f} val acc : {:.4f}".format(epoch,val_loss_all[-1],val_acc_all[-1]))
+
+        #寻找最高准确度
+        if val_acc_all[-1] > best_acc:
+            #保存当前最高的准确度
+            best_acc = val_acc_all[-1]
+            #保存当前的最高准确度
+            best_model_wts = copy.deepcopy(model.state_dict())
+        #计算训练耗时
+        time_use = time.time() - since
+        print("训练和验证耗费的时间{:.0f}m{:.0f}s".format(time_use//60,time_use%60))
+
+    #选择最优参数
+    #加载最高的准确率下的模型参数
+    model.load_state_dict(best_model_wts)
+    torch.save(model.load_state_dict(best_model_wts),'../LeNet/best_model.pth')
+
+
+    train_process = pd.DataFrame(data={
+        "epoch":range(num_epochs),
+        "train_loss_all":train_loss_all,
+        "val_loss_all":val_loss_all,
+        "train_acc_all":train_acc_all,
+        "val_acc_all":val_acc_all
+    })
+
+    return train_process
+    
+
+def matplotlib_acc_loss(train_process):
+    plt.figure(figsize=(12,4))
+    plt.subplot(1,2,1)
+    plt.plot(train_process["epoch"],train_process.train_loss_all,"ro-",label = "train loss")
+    plt.plot(train_process["epoch"],train_process.val_loss_all,"bs-",label = "val loss")
+    plt.legend()
+    plt.xlabel("epoch")
+    plt.ylabel("loss")
+
+    plt.subplot(1,2,2)
+    plt.plot(train_process["epoch"],train_process.train_acc_all,"ro-",label = "train acc")
+    plt.plot(train_process["epoch"],train_process.val_acc_all,"bs-",label = "val acc")
+    plt.legend()
+    plt.xlabel("epoch")
+    plt.ylabel("loss")
+
+    plt.show()
+
+
+if __name__ == "__main__":
+    #将模型实例话
+    LeNet = LeNet()
+    train_dataloader,val_dataloader = train_val_data_process()
+    train_process = train_model_process(LeNet,train_dataloader,val_dataloader,20)
+    matplotlib_acc_loss(train_process)
+
+
+
+
+
+
+
+
 
 
 
