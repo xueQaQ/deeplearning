@@ -71,4 +71,25 @@ if __name__ == "__name__":
     test_dataloader = test_data_process()
 
     #加载模型测试的函数
-    test_data_process(model,test_dataloader)
+    # test_data_process(model,test_dataloader)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    
+    model = model.to(device)
+
+    classes = ['t-shirt', 'trouser', 'pullover', 'dress', 'coat','sandal', 'shirt', 'sneaker', 'bag', 'ankle boot']
+    with torch.no_grad():
+        for b_x, b_y in test_dataloader:
+            b_x = b_x.to(device)
+            b_y = b_y.to(device)
+
+            #设置模型为验证模式
+            model.eval()
+            output = model(b_x)
+
+            #查找最大索引下标
+            pre_lab = torch.argmax(ouput,dim=1)
+            result = pre_lab.item()
+            label = b_y.item()
+
+            print("预测值:",classes[result],"------","真实值",classes[label])
