@@ -147,8 +147,10 @@ def train_model_process(model,train_dataloader,val_dataloader,num_epochs):
 
     #选择最优参数
     #加载最高的准确率下的模型参数
-    model.load_state_dict(best_model_wts)
-    torch.save(model.load_state_dict(best_model_wts),'../LeNet/best_model.pth')
+    # model.load_state_dict(best_model_wts)
+    # torch.save(model.state_dict(best_model_wts),'../LeNet/best_model.pth')
+
+    torch.save(best_model_wts,'../LeNet/best_model.pth')
 
 
     train_process = pd.DataFrame(data={
